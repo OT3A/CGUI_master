@@ -13,17 +13,15 @@ namespace CGAlgorithms.Algorithms.ConvexHull
         {
             List<Point> right = new List<Point>();
             List<Point> left = new List<Point>();
-            HashSet<Point> extremPoints = new HashSet<Point>();
-            List<Point> listExtremPoints = new List<Point>();
-            Point last = new Point(0,0);
+            List<Point> extremPoints = new List<Point>();
+            Point last ;
             int size = points.Count();
             bool outloop = false;
-            bool inloop = false;
             for (int i = 0; i < size; i++)
             {
                 for (int j = 0; j < size; j++)
                 {
-                    if (points[i] != points[j])
+                    if (points[i] != points[j] && points[i].X != points[j].X && points[i].Y!=points[j].Y)
                     {
                         Line segment = new Line(points[i], points[j]);
                         for (int k = 0; k < size; k++)
@@ -46,22 +44,18 @@ namespace CGAlgorithms.Algorithms.ConvexHull
                         }
                         if (right.Count() == 0 || left.Count() == 0)
                         {
-                            last = points[i];
-                            extremPoints.Add(points[i]);
-                            extremPoints.Add(points[j]);
-                            inloop = true;
-                            break;
+                            if(!extremPoints.Contains(points[i]))
+                                extremPoints.Add(points[i]);
+                            if(!extremPoints.Contains(points[j]))
+                                extremPoints.Add(points[j]);
                             outloop = true;
+                            break;
                         }
                         right.Clear();
                         left.Clear();
                     }
                     right.Clear();
                     left.Clear();
-                    //if (inloop)
-                    //{
-                    //    break;
-                    //}
                 }
                 right.Clear();
                 left.Clear();
@@ -72,9 +66,15 @@ namespace CGAlgorithms.Algorithms.ConvexHull
             }
             right.Clear();
             left.Clear();
+
+            if (extremPoints.Count() != 0)
+                last = extremPoints[0];
+            else
+                last = new Point(0, 0);
+
             for (int i = 0; i < size; i++)
             {
-                if (last != points[i])
+                if (last != points[i] && !(extremPoints.Contains(points[i])))
                 {
                     Line s = new Line(last, points[i]);
                     for (int j = 0; j < size; j++)
@@ -97,9 +97,12 @@ namespace CGAlgorithms.Algorithms.ConvexHull
                     }
                     if (left.Count() == 0 || right.Count() == 0)
                     {
-                        extremPoints.Add(points[i]);
-                        //if(!extremPoints.Contains(points[i]))
+                        if (!extremPoints.Contains(points[i]))
+                        {
+                            extremPoints.Add(points[i]);
                             last = points[i];
+                            i = 0;
+                        }
                     }
                     right.Clear();
                     left.Clear();
@@ -108,11 +111,6 @@ namespace CGAlgorithms.Algorithms.ConvexHull
                 left.Clear();
             }
             outPoints = extremPoints.ToList();
-            for (int i = 0; i < listExtremPoints.Count(); i++)
-            {
-                //Console.WriteLine(last.X+" d "+ last.Y);
-                Console.WriteLine(listExtremPoints[i].X + " " + listExtremPoints[i].Y);
-            }
         }
 
         public override string ToString()
