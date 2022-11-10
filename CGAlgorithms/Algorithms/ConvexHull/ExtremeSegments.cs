@@ -101,7 +101,7 @@ namespace CGAlgorithms.Algorithms.ConvexHull
                         {
                             extremPoints.Add(points[i]);
                             last = points[i];
-                            i = 0;
+                            i = -1;
                         }
                     }
                     right.Clear();
