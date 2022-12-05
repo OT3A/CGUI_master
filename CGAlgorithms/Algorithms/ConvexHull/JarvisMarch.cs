@@ -9,112 +9,116 @@ namespace CGAlgorithms.Algorithms.ConvexHull
 {
     public class JarvisMarch : Algorithm
     {
-        public double Theta(Point v1,Point v2,double m1,double m2)
+        public static int orientation(Point p, Point q, Point r)
         {
-            double dotProduct = v1.X * v2.X + v1.Y * v2.Y;
-            double tmp = dotProduct / (m1 * m2);
-            double theta = Math.Acos(tmp);
-            return theta;
+            int val = (int)(q.Y - p.Y) * (int)(r.X - q.X) -
+                (int)(q.X - p.X) * (int)(r.Y - q.Y);
 
+            if (val == 0) return 0; // collinear
+            return (val > 0) ? 1 : 2; // clock or counterclock wise
         }
         public override void Run(List<Point> points, List<Line> lines, List<Polygon> polygons, ref List<Point> outPoints, ref List<Line> outLines, ref List<Polygon> outPolygons)
         {
-            double dotProduct;
-            Point start, end;
-            Point V1, V2;
-            double magV1, magV2;
-            List<Point> right = new List<Point>();
-            List<Point> left = new List<Point>();
-            List<Point> extremPoints = new List<Point>();
-            Point last;
-            int size = points.Count();
-            points.Sort((p1, p2) => p1.X.CompareTo(p2.X));
-            last = points[0];
-            extremPoints.Add(last);
-            bool second = false;
-            for (int i = 0; i < size; i++)
+
+            List<Point> tmpPints = new List<Point>();
+
+            //remove Dublicated
+            for(int i = 0; i < points.Count; i++)
             {
-                if (last != points[i] && !(extremPoints.Contains(points[i])))
+                if (!tmpPints.Contains(points[i]))
+                    tmpPints.Add(points[i]);
+            }
+           
+            points = tmpPints;
+            
+            //if No Convex
+            if (points.Count < 3)
+            {
+                outPoints = points;
+                return;
+            }
+
+            //Point MinY_Point = points.OrderByDescending(p => p.Y).ToList().Last();
+
+            double minY = 100000000;
+            int index = -5 ;
+            
+            //get Min
+            for (int i = 0; i < points.Count; i++)
+            {
+                if (points[i].Y < minY)
                 {
-                    Line s = new Line(last, points[i]);
-                    for (int j = 0; j < size; j++)
-                    {
-                        if (left.Count() != 0 && right.Count() != 0)
-                        {
-                            break;
-                        }
-                        if (points[j] != points[i] && points[j] != last)
-                        {
-                            if (CGUtilities.HelperMethods.CheckTurn(s, points[j]) == CGUtilities.Enums.TurnType.Left)
-                            {
-                                left.Add(points[j]);
-                            }
-                            else if (CGUtilities.HelperMethods.CheckTurn(s, points[j]) == CGUtilities.Enums.TurnType.Right)
-                            {
-                                right.Add(points[j]);
-                            }
-                        }
-                    }
-                    if (left.Count() == 0 || right.Count() == 0)
-                    {
-                        if (!extremPoints.Contains(points[i]))
-                        {
-                            extremPoints.Add(points[i]);
-                            last = points[i];
-                            second = true;
-                            break;
-                        }
-                    }
-                    right.Clear();
-                    left.Clear();
+                    minY = points[i].Y;
+                    index = i;
                 }
-                right.Clear();
-                left.Clear();
-                if (second)
+            }
+
+            Point MinY_Point = points[index];
+            Point eassumed_pointX = new Point(MinY_Point.X - 20, MinY_Point.Y);
+            Point StartedPoint = MinY_Point;
+
+            outPoints.Add(StartedPoint);
+            double counter = 0;
+
+            while (counter < points.Count)
+            {
+                double largest_angle = 0;
+                Point next = MinY_Point;
+                double Distant = 0;
+                double largest_dist = 0;
+
+                for (int i = 0; i < points.Count; i++)
+                {
+                    Point ab = new Point((MinY_Point.X - eassumed_pointX.X), (MinY_Point.Y - eassumed_pointX.Y));
+                    Point ac = new Point((points[i].X - MinY_Point.X), (points[i].Y - MinY_Point.Y));
+
+                    //angle = shift tan ( product / cross  )
+                    double angle = Math.Atan2(HelperMethods.CrossProduct(ab, ac), (ab.X * ac.X) + (ab.Y * ac.Y));
+                    
+                    if (angle < 0)
+                        angle += (2 * Math.PI);
+
+                    //get Distant
+                    Distant = Math.Sqrt((MinY_Point.X - points[i].X) + (MinY_Point.Y - points[i].Y));
+
+                    //large Angle
+                    if (angle > largest_angle)
+                    {
+                        largest_angle = angle;
+                        largest_dist = Distant;
+                        next = points[i];
+                    }
+                    else if (angle == largest_angle)
+                    {
+                        if (Distant > largest_dist)
+                        {
+                            largest_dist = Distant;
+                            next = points[i];
+                        }
+                    }
+
+
+                }
+
+                // Finish Convex
+                if (StartedPoint.X == next.X && StartedPoint.Y == next.Y)
                 {
                     break;
                 }
-            }
-            end = extremPoints[0];
-            start = extremPoints[1];
-            for (int i = 0; i < size; i++)
-            {
-                double maxTheata = 0;
-                if (last != points[i] && !(extremPoints.Contains(points[i])))
-                {
 
-                    Line s = new Line(last, points[i]);
-                    V1 = CGUtilities.HelperMethods.GetVector(s);
-                    double tmp = (V1.X * V1.X) + (V1.Y + V1.Y);
-                    magV1 = Math.Sqrt(tmp);
-                    for (int j = 0; j < size; j++)
-                    {
-                        Line l = new Line( points[j], points[i]);
-                        V2 = CGUtilities.HelperMethods.GetVector(l);
-                        double tmp2 = (V2.X * V2.X) + (V2.Y + V2.Y);
-                        magV2 = Math.Sqrt(tmp2);
+                outPoints.Add(next);
 
-                        if (points[j] != points[i] && points[j] != last)
-                        {
-                            
-                        }
-                    }
-                    if (left.Count() == 0 || right.Count() == 0)
-                    {
-                        if (!extremPoints.Contains(points[i]))
-                        {
-                            extremPoints.Add(points[i]);
-                            last = points[i];
-                            i = -1;
-                        }
-                    }
-                    right.Clear();
-                    left.Clear();
-                }
-                right.Clear();
-                left.Clear();
+                eassumed_pointX = MinY_Point;
+                MinY_Point = next;
+
+                counter++;
+
             }
-            outPoints = extremPoints.ToList();
+
+
+
+
+
         }
 
         public override string ToString()
