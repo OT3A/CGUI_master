@@ -12,6 +12,14 @@ namespace CGAlgorithms.Algorithms.ConvexHull
         public override void Run(List<Point> points, List<Line> lines, List<Polygon> polygons, ref List<Point> outPoints, ref List<Line> outLines, ref List<Polygon> outPolygons)
         {
             List<CGUtilities.Point> ps = new List<CGUtilities.Point>();
+            List<Point> Copypoints = new List<Point>();
+
+            foreach (var p in points)
+            {
+                if (!Copypoints.Contains(p))
+                    Copypoints.Add(p);
+            }
+            points = Copypoints;
 
             int size = points.Count();
             for (int i = 0; i < size; i++)
@@ -26,7 +34,7 @@ namespace CGAlgorithms.Algorithms.ConvexHull
                             {
                                 if (i != p && j != p && k != p)
                                 {
-                                    if (CGUtilities.HelperMethods.PointInTriangle(points[p], points[i], points[j], points[k]) == CGUtilities.Enums.PointInPolygon.Inside)
+                                    if (CGUtilities.HelperMethods.PointInTriangle(points[p], points[i], points[j], points[k]) == CGUtilities.Enums.PointInPolygon.Inside|| CGUtilities.HelperMethods.PointInTriangle(points[p], points[i], points[j], points[k]) == CGUtilities.Enums.PointInPolygon.OnEdge)
                                     {
                                         ps.Add(points[p]);
                                     }
