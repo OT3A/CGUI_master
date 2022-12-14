@@ -9,95 +9,112 @@ namespace CGAlgorithms.Algorithms.ConvexHull
 {
     public class GrahamScan : Algorithm
     {
-        public List<Point> sortPoints(List<double> arr, List<Point> points)
+
+        public static int getBy_Y(List<Point> points) 
         {
-            for (int i = 1; i < arr.Count; ++i)
+            double Min = 10000000000;
+            int index = 0;
+            for (int i = 0; i < points.Count; i++)
             {
-                double key = arr[i];
-                Point p1 = points[i];
-                int j = i - 1;
-                while (j >= 0 && arr[j] > key)
+                if (points[i].Y < Min)
                 {
-                    arr[j + 1] = arr[j];
-                    points[j + 1] = points[j];
-                    j = j - 1;
+                    Min = points[i].Y;
+                    index = i;
                 }
-                arr[j + 1] = key;
-                points[j + 1] = p1;
             }
-            return points;
+            return index;
         }
+
+        public static List<KeyValuePair<Point, double>> SortAngle(List<Point> points ,Line LineHorizontal, Point p)
+        {
+            List<KeyValuePair<Point, double>> SortPointsAngle = new List<KeyValuePair<Point, double>>();
+
+            for (int i = 0; i < points.Count; i++)
+            {
+                Point tmp = new Point((points[i].X - LineHorizontal.Start.X), (points[i].Y - LineHorizontal.Start.Y));
+                double dotProduct = (p.X * tmp.X) + (p.Y * tmp.Y);
+                double radAngel = Math.Atan2(dotProduct, HelperMethods.CrossProduct(p, tmp));
+                double degAngel = (180 / Math.PI) * (radAngel);
+                SortPointsAngle.Add(new KeyValuePair<Point, double>(points[i], degAngel));
+            }
+
+            SortPointsAngle.Sort((x, y) => x.Value.CompareTo(y.Value));
+            return SortPointsAngle;
+        }
+
         public override void Run(List<Point> points, List<Line> lines, List<Polygon> polygons, ref List<Point> outPoints, ref List<Line> outLines, ref List<Polygon> outPolygons)
         {
+            List<Point> tmpPints = new List<Point>();
+            List<KeyValuePair<Point, double>> Sorted_Points = new List<KeyValuePair<Point, double>>();
+
+            //remove Dublicated
+            for (int i = 0; i < points.Count; i++)
+            {
+                if (!tmpPints.Contains(points[i]))
+                    tmpPints.Add(points[i]);
+            }
+
+            points = tmpPints;
+
+            //if No Convex
             if (points.Count < 3)
             {
                 outPoints = points;
+                return;
             }
-            else
+
+            Point MinY = points[getBy_Y(points)];
+            Point FirstPoint = new Point(MinY.X + 1, MinY.Y);
+            Line FirstLineHorizontal = new Line(MinY, FirstPoint); //min y line const 
+
+            points.Remove(MinY);
+
+            Point p = new Point((FirstLineHorizontal.End.X - FirstLineHorizontal.Start.X), (FirstLineHorizontal.End.Y - FirstLineHorizontal.Start.Y));
+            Point top, preTop;
+            //sorted point by angle
+            Sorted_Points = SortAngle(points, FirstLineHorizontal, p);
+
+            Sorted_Points.Add(new KeyValuePair<Point, double>(MinY, 0));
+
+            Stack<Point> ConvexHull = new Stack<Point>();
+            ConvexHull.Push(MinY);
+            ConvexHull.Push(Sorted_Points[0].Key);
+            
+
+            for (int i = 1; i < Sorted_Points.Count; i++)
             {
-                Point minP;
-                double minY = 100000000, minX = 0;
-                for (int i = 0; i < points.Count; i++)
+                top = ConvexHull.Pop();
+                preTop = ConvexHull.Pop();
+                ConvexHull.Push(preTop);
+                ConvexHull.Push(top);
+                Line segment = new Line(top, preTop);
+                if (ConvexHull.Count > 2)//exist convex
                 {
-                    if (points[i].Y < minY)
+                    while (HelperMethods.CheckTurn(segment, Sorted_Points[i].Key) != Enums.TurnType.Left) //if not extreme 
                     {
-                        minY = points[i].Y;
-                        minX = points[i].X;
-                        minP = points[i];
+                        ConvexHull.Pop();
+                        top = ConvexHull.Pop();
+                        preTop = ConvexHull.Pop();
+                        ConvexHull.Push(preTop);
+                        ConvexHull.Push(top);
+                        segment = new Line(top, preTop);
                     }
                 }
-                List<double> angList = new List<double>();
-                Point m = new Point(minX, minY);
-                Point ex = new Point(minX - 20, minY);
-                Point start = m;
-                Point ab = new Point(m.X - ex.X, m.Y - ex.Y);
-
-                for (int i = 0; i < points.Count; i++)
-                {
-                    Point ac = new Point(points[i].X - m.X, points[i].Y - m.Y);
-
-                    double cross = HelperMethods.CrossProduct(ab, ac);
-                    double dot = (ab.X * ac.X) + (ab.Y * ac.Y);
-
-                    double angle = Math.Atan2(cross, dot);
-                    if (angle < 0)
-                        angle = angle + (2 * Math.PI);
-                    angList.Add(angle);
-                }
-                List<Point> points2 = sortPoints(angList, points);
-
-                Stack<Point> stack = new Stack<Point>();
-                stack.Push(points2[0]);
-                stack.Push(points2[1]);
-                stack.Push(points2[2]);
-                for (int i = 3; i < points2.Count; i++)
-                {
-                    Point pTop = stack.Peek();
-                    stack.Pop();
-                    Point pRes = stack.Peek();
-                    stack.Push(pTop);
-                    while (CGUtilities.HelperMethods.CheckTurn(new Line(pRes, pTop), points2[i]) != CGUtilities.Enums.TurnType.Left)
-                    {
-                        stack.Pop();
-                        pTop = stack.Peek();
-                        stack.Pop();
-                        pRes = stack.Peek();
-                        stack.Push(pTop);
-                    }
-                    stack.Push(points2[i]);
-                }
-
-                for (int i = 0; i < stack.Count; i++)
-                {
-                    outPoints.Add(stack.Pop());
-                    i--;
-                }
+                ConvexHull.Push(Sorted_Points[i].Key);
             }
-        }
+          
+            //output
+            for(int i = ConvexHull.Count; i > 1; i--)
+            {
+                outPoints.Add(ConvexHull.Pop());
+            }
 
+            //outPoints.RemoveAt(outPoints.Count - 1);
+        }
         public override string ToString()
         {
             return "Convex Hull - Graham Scan";
         }
+
     }
 }
