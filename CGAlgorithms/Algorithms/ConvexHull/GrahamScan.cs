@@ -62,15 +62,14 @@ namespace CGAlgorithms.Algorithms.ConvexHull
                 outPoints = points;
                 return;
             }
-
-            Point MinY = points[getBy_Y(points)];
-            Point FirstPoint = new Point(MinY.X + 1, MinY.Y);
+            Point FirstPoint, MinY,top, preTop;
+            MinY = points[getBy_Y(points)];
+            FirstPoint = new Point(MinY.X + 1, MinY.Y);
             Line FirstLineHorizontal = new Line(MinY, FirstPoint); //min y line const 
 
             points.Remove(MinY);
 
             Point p = new Point((FirstLineHorizontal.End.X - FirstLineHorizontal.Start.X), (FirstLineHorizontal.End.Y - FirstLineHorizontal.Start.Y));
-            Point top, preTop;
             //sorted point by angle
             Sorted_Points = SortAngle(points, FirstLineHorizontal, p);
 
