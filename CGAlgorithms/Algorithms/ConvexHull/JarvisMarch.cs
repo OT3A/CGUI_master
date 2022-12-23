@@ -9,28 +9,20 @@ namespace CGAlgorithms.Algorithms.ConvexHull
 {
     public class JarvisMarch : Algorithm
     {
-        public static int orientation(Point p, Point q, Point r)
-        {
-            int val = (int)(q.Y - p.Y) * (int)(r.X - q.X) -
-                (int)(q.X - p.X) * (int)(r.Y - q.Y);
-
-            if (val == 0) return 0; // collinear
-            return (val > 0) ? 1 : 2; // clock or counterclock wise
-        }
         public override void Run(List<Point> points, List<Line> lines, List<Polygon> polygons, ref List<Point> outPoints, ref List<Line> outLines, ref List<Polygon> outPolygons)
         {
 
             List<Point> tmpPints = new List<Point>();
 
             //remove Dublicated
-            for(int i = 0; i < points.Count; i++)
+            for (int i = 0; i < points.Count; i++)
             {
                 if (!tmpPints.Contains(points[i]))
                     tmpPints.Add(points[i]);
             }
-           
+
             points = tmpPints;
-            
+
             //if No Convex
             if (points.Count < 3)
             {
@@ -41,8 +33,8 @@ namespace CGAlgorithms.Algorithms.ConvexHull
             //Point MinY_Point = points.OrderByDescending(p => p.Y).ToList().Last();
 
             double minY = 100000000;
-            int index = -5 ;
-            
+            int index = -5;
+
             //get Min
             for (int i = 0; i < points.Count; i++)
             {
@@ -74,7 +66,7 @@ namespace CGAlgorithms.Algorithms.ConvexHull
 
                     //angle = shift tan ( product / cross  )
                     double angle = Math.Atan2(HelperMethods.CrossProduct(ab, ac), (ab.X * ac.X) + (ab.Y * ac.Y));
-                    
+
                     if (angle < 0)
                         angle += (2 * Math.PI);
 
@@ -97,7 +89,6 @@ namespace CGAlgorithms.Algorithms.ConvexHull
                         }
                     }
 
-
                 }
 
                 // Finish Convex
@@ -114,10 +105,6 @@ namespace CGAlgorithms.Algorithms.ConvexHull
                 counter++;
 
             }
-
-
-
-
 
         }
 

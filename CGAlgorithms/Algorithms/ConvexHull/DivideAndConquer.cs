@@ -7,219 +7,267 @@ namespace CGAlgorithms.Algorithms.ConvexHull
     public class DivideAndConquer : Algorithm
     {
 
-        public List<Point> merge(List<Point> aa, List<Point> bb)
+        public List<Point> merge(List<Point> LeftBranch, List<Point> RightBranch)
         {
 
-            //a = a.Distinct().ToList();
-            //b = b.Distinct().ToList();
-            List<Point> a = new List<Point>();
-            List<Point> b = new List<Point>();
+           
+            List<Point> DistinctLeft = new List<Point>();
+            List<Point> DistinctRight = new List<Point>();
 
-
-            for (int i = 0; i < aa.Count; ++i)
+            // To Make The Right Branch Have the Only Distinct Points
+            foreach(Point p in RightBranch)
             {
-                if (!a.Contains(aa[i]))
-
-                    a.Add(aa[i]);
+                if (DistinctRight.Contains(p)==false)
+                    DistinctRight.Add(p);
+            }
+            // To Make The Left Branch Have the Only Distinct Points
+            foreach (Point p in LeftBranch)
+            {
+                if (DistinctLeft.Contains(p)==false)
+                    DistinctLeft.Add(p);
+                
             }
 
-            for (int i = 0; i < bb.Count; ++i)
-            {
-                if (!b.Contains(bb[i]))
+         
+            int LiftBranchLength = DistinctLeft.Count;
+            int RightBranchLength = DistinctRight.Count;
 
-                    b.Add(bb[i]);
+            // Find the furthest point in the left branch
+            int LeftMaxIdex = GetMaxLeft(DistinctLeft);
+
+            // Find the Nearst point in the Right branch
+           int  RightMinIdex = GetMinRight(DistinctRight);
+
+            //  Upper Tangent 
+            int UpperLeftIndex = LeftMaxIdex;
+            int UpperRightIdex = RightMinIdex;
+            GetUpperTangent(DistinctRight, DistinctLeft, ref UpperLeftIndex, ref UpperRightIdex);
+
+            // Lower Tenget
+            int LowerLeftIndex = LeftMaxIdex;
+            int LowerRightIndex = RightMinIdex;        
+            GetLowerTangent(DistinctRight, DistinctLeft,ref LowerLeftIndex,ref LowerRightIndex);
+
+            int Temp = UpperLeftIndex;
+            int Temp2 = LowerRightIndex;
+            List<Point> New_Convex = new List<Point>();
+
+            if (New_Convex.Contains(DistinctLeft[Temp])==false)
+            {
+
+                New_Convex.Add(DistinctLeft[Temp]);
             }
-            //a = a.OrderBy(x => x.X).ThenBy(x => x.Y).ToList();
-            //o = outPoints.OrderBy(x => x.X).ThenBy(x => x.Y).ToList();
 
-            int n1 = a.Count;
-            int n2 = b.Count;
-            int ind1 = 0;
-            int ind2 = 0;
-
-            for (int i = 1; i < n1; i++)
+            if(Temp!=LowerLeftIndex)
             {
-                if (a[i].X > a[ind1].X)
-                    ind1 = i;
-                else if (a[i].X == a[ind1].X)
+                while (true)
                 {
-                    if (a[i].Y > a[ind1].Y)
-                        ind1 = i;
+                    Temp += 1;
+                    Temp %= LiftBranchLength;
+                    if (New_Convex.Contains(DistinctLeft[Temp])==false)
+                    {
+                        New_Convex.Add(DistinctLeft[Temp]);
+
+                    }
+                    if (Temp == LowerLeftIndex)
+                        break;
+                }
+
+                    
+
+            }
+
+            if (New_Convex.Contains(DistinctRight[Temp2])==false)
+            {
+                New_Convex.Add(DistinctRight[Temp2]);
+            }
+
+            if(Temp2 != UpperRightIdex)
+            {
+                while (true)
+                {
+                    Temp2 += 1;
+                    Temp2 %=  RightBranchLength;
+                    if (New_Convex.Contains(DistinctRight[Temp2])==false)
+                    {
+                        New_Convex.Add(DistinctRight[Temp2]);
+                    }
+                    if (Temp2 == UpperRightIdex)
+                        break;
                 }
 
             }
+            return New_Convex;
+        }
 
-            // ind2  leftmost point of b 
-            for (int i = 1; i < n2; i++)
+        public int GetMaxLeft(List<Point> DistinctLeft)
+        {
+            int LeftIndex = 0;
+            for (int i = 0; i < DistinctLeft.Count; i++)
             {
-                if (b[i].X < b[ind2].X)
-                    ind2 = i;
-                else if (b[i].X == b[ind2].X)
-                {
-                    if (b[i].Y < b[ind2].Y)
-                        ind2 = i;
-                }
+                if (DistinctLeft[i].X > DistinctLeft[LeftIndex].X)
+                    LeftIndex = i;
+                else if (DistinctLeft[i].X == DistinctLeft[LeftIndex].X && DistinctLeft[i].Y > DistinctLeft[LeftIndex].Y)
+                    LeftIndex = i;
+                
 
             }
 
-            //  upper tangent 
-            int uppera = ind1;
-            int upperb = ind2;
+            return LeftIndex;
+        }
+
+        public int GetMinRight(List<Point> DistinctRight)
+        {
+            int RightIndex = 0;
+            for (int i = 1; i < DistinctRight.Count; i++)
+            {
+                if (DistinctRight[i].X < DistinctRight[RightIndex].X)
+                    RightIndex = i;
+                else if (DistinctRight[i].X == DistinctRight[RightIndex].X && DistinctRight[i].Y < DistinctRight[RightIndex].Y)        
+                        RightIndex = i;
+                
+            }
+            return RightIndex;
+        }
+
+        public void GetUpperTangent(List<Point> DistinctRight, List<Point> DistinctLeft, ref int UpperLeftIndex,ref int UpperRightIdex)
+        {
+            Enums.TurnType Direction;
+            bool cheack = false;            
+            while (true)
+            {
+                cheack = true;
+                //Get the first point in the tanget
+                Direction = HelperMethods.CheckTurn(new Line(DistinctRight[UpperRightIdex].X,
+                           DistinctRight[UpperRightIdex].Y, DistinctLeft[UpperLeftIndex].X,
+                           DistinctLeft[UpperLeftIndex].Y),
+                           DistinctLeft[(UpperLeftIndex + 1) % DistinctLeft.Count]);
+
+                while (Direction== Enums.TurnType.Right)
+                {
+                    UpperLeftIndex = (UpperLeftIndex + 1) % DistinctLeft.Count;
+                    cheack = false;
+                    Direction = HelperMethods.CheckTurn(new Line(DistinctRight[UpperRightIdex].X,
+                    DistinctRight[UpperRightIdex].Y, DistinctLeft[UpperLeftIndex].X,
+                    DistinctLeft[UpperLeftIndex].Y),
+                    DistinctLeft[(UpperLeftIndex + 1) % DistinctLeft.Count]);
+                }
+                  
+                if (Direction== Enums.TurnType.Colinear)
+                {
+
+                    UpperLeftIndex = (UpperLeftIndex + 1) % DistinctLeft.Count;
+                }
+
+                Direction = HelperMethods.CheckTurn(new Line(DistinctLeft[UpperLeftIndex].X,
+                    DistinctLeft[UpperLeftIndex].Y, DistinctRight[UpperRightIdex].X,
+                    DistinctRight[UpperRightIdex].Y),
+                    DistinctRight[(DistinctRight.Count + UpperRightIdex - 1) % DistinctRight.Count]);
+                //get the second point in the tanget
+                while (Direction== Enums.TurnType.Left)
+                {
+                    UpperRightIdex = (DistinctRight.Count + UpperRightIdex - 1) % DistinctRight.Count;
+                    cheack = false;
+                    Direction = HelperMethods.CheckTurn(new Line(DistinctLeft[UpperLeftIndex].X,
+                    DistinctLeft[UpperLeftIndex].Y, DistinctRight[UpperRightIdex].X,
+                    DistinctRight[UpperRightIdex].Y),
+                    DistinctRight[(DistinctRight.Count + UpperRightIdex - 1) % DistinctRight.Count]);
+
+                }
+                if (Direction== Enums.TurnType.Colinear)
+                {
+
+                    UpperRightIdex = (UpperRightIdex + DistinctRight.Count - 1) % DistinctRight.Count;
+                }
+                if(cheack==true)
+                {
+                    break;
+                }
+            }
+        }
+        public void GetLowerTangent(List<Point> DistinctRight, List<Point> DistinctLeft, ref int LowerLeftIndex, ref int LowerRightIndex)
+        {
             bool found = false;
-            int num = 0;
-
-            while (!found)
+            while (true)
             {
                 found = true;
-                while (CGUtilities.HelperMethods.CheckTurn(new Line(b[upperb].X,
-                           b[upperb].Y, a[uppera].X, a[uppera].Y),
-                           a[(uppera + 1) % n1]) == Enums.TurnType.Right)
+                while (CGUtilities.HelperMethods.CheckTurn(new Line(DistinctRight[LowerRightIndex].X,
+                    DistinctRight[LowerRightIndex].Y, DistinctLeft[LowerLeftIndex].X,
+                    DistinctLeft[LowerLeftIndex].Y),
+                    DistinctLeft[(LowerLeftIndex + DistinctLeft.Count - 1) % DistinctLeft.Count]) 
+                    == Enums.TurnType.Left)
                 {
-                    uppera = (uppera + 1) % n1;
-                    found = false;
-                }
-                if (found == true &&
-                    (CGUtilities.HelperMethods.CheckTurn(new Line(b[upperb].X, b[upperb].Y, a[uppera].X, a[uppera].Y),
-                         a[(uppera + 1) % n1]) == Enums.TurnType.Colinear))
-                    uppera = (uppera + 1) % n1;
-
-                while (CGUtilities.HelperMethods.CheckTurn(new Line(a[uppera].X, a[uppera].Y, b[upperb].X, b[upperb].Y), b[(n2 + upperb - 1) % n2]) == Enums.TurnType.Left)
-                {
-                    upperb = (n2 + upperb - 1) % n2;
-                    found = false;
-
-                }
-                if (found == true && (CGUtilities.HelperMethods.CheckTurn(new Line(a[uppera].X, a[uppera].Y, b[upperb].X, b[upperb].Y), b[(upperb + n2 - 1) % n2]) == Enums.TurnType.Colinear))
-                    upperb = (upperb + n2 - 1) % n2;
-
-
-            }
-
-            int lowera = ind1;
-            int lowerb = ind2;
-            found = false;
-
-
-
-            //lower tangent 
-            while (!found)
-            {
-                found = true;
-                while (CGUtilities.HelperMethods.CheckTurn(new Line(b[lowerb].X, b[lowerb].Y, a[lowera].X, a[lowera].Y), a[(lowera + n1 - 1) % n1]) == Enums.TurnType.Left)
-                {
-                    lowera = (lowera + n1 - 1) % n1;
+                    LowerLeftIndex = (LowerLeftIndex + DistinctLeft.Count - 1) % DistinctLeft.Count;
                     found = false;
                 }
 
-                if (found == true &&
-                    (CGUtilities.HelperMethods.CheckTurn(new Line(b[lowerb].X, b[lowerb].Y, a[lowera].X, a[lowera].Y),
-                         a[(lowera + n1 - 1) % n1]) == Enums.TurnType.Colinear))
-                    lowera = (lowera + n1 - 1) % n1;
-
-                while (CGUtilities.HelperMethods.CheckTurn(new Line(a[lowera].X, a[lowera].Y, b[lowerb].X, b[lowerb].Y), b[(lowerb + 1) % n2]) == Enums.TurnType.Right)
+                if(HelperMethods.CheckTurn(new Line(DistinctRight[LowerRightIndex].X, 
+                    DistinctRight[LowerRightIndex].Y, DistinctLeft[LowerLeftIndex].X,
+                    DistinctLeft[LowerLeftIndex].Y),DistinctLeft[(LowerLeftIndex + DistinctLeft.Count - 1)
+                    % DistinctLeft.Count]) == Enums.TurnType.Colinear)
                 {
-                    lowerb = (lowerb + 1) % n2;
+
+                     LowerLeftIndex = (LowerLeftIndex + DistinctLeft.Count - 1) % DistinctLeft.Count;
+                }
+
+                while (CGUtilities.HelperMethods.CheckTurn(new Line(DistinctLeft[LowerLeftIndex].X,
+                    DistinctLeft[LowerLeftIndex].Y, DistinctRight[LowerRightIndex].X,
+                    DistinctRight[LowerRightIndex].Y), DistinctRight[(LowerRightIndex + 1)
+                    % DistinctRight.Count]) == Enums.TurnType.Right)
+                {
+                    LowerRightIndex = (LowerRightIndex + 1) % DistinctRight.Count;
                     found = false;
-
                 }
-                if (found == true && (CGUtilities.HelperMethods.CheckTurn(new Line(a[lowera].X, a[lowera].Y, b[lowerb].X, b[lowerb].Y), b[(lowerb + 1) % n2]) == Enums.TurnType.Colinear))
-                    lowerb = (lowerb + 1) % n2;
-
-
+                if ((CGUtilities.HelperMethods.CheckTurn(new Line(DistinctLeft[LowerLeftIndex].X,
+                    DistinctLeft[LowerLeftIndex].Y, DistinctRight[LowerRightIndex].X,
+                    DistinctRight[LowerRightIndex].Y), DistinctRight[(LowerRightIndex + 1) 
+                    % DistinctRight.Count]) == Enums.TurnType.Colinear))
+                    LowerRightIndex = (LowerRightIndex + 1) % DistinctRight.Count;
+                if (found == true)
+                    break;
             }
 
-            List<Point> out_points = new List<Point>();
-
-
-            int ind = uppera;
-            if (!out_points.Contains(a[uppera]))
-                out_points.Add(a[uppera]);
-
-            while (ind != lowera)
-            {
-                ind = (ind + 1) % n1;
-
-
-                if (!out_points.Contains(a[ind]))
-                {
-                    out_points.Add(a[ind]);
-
-                }
-
-
-
-
-            }
-
-            ind = lowerb;
-            if (!out_points.Contains(b[lowerb]))
-
-                out_points.Add(b[lowerb]);
-
-            while (ind != upperb)
-            {
-                ind = (ind + 1) % n2;
-
-                if (!out_points.Contains(b[ind]))
-
-                    out_points.Add(b[ind]);
-
-            }
-
-
-
-
-            return out_points;
-        }
-
-
-        public List<Point> ConquerConvex()
-        {
-            List<Point> convex = new List<Point>();
-            return convex;
-        }
-
-        
+        }        
         public List<Point> DivideTwoConvex(List<Point> points)
         {
-            List<Point> LeftBranch;
-            List<Point> RightBranch;
-            List<Point> NextLeftBranch;
-            List<Point> NextRightBranch;
+            List<Point> LeftBranch, RightBranch, NextLeftBranch, NextRightBranch;
+             List<Point> DistinctLeft = new List<Point>();
+            List<Point> DistinctRight = new List<Point>();
             int Length = points.Count;
 
+            points.Sort((a, b) => {
+                if (a.X == b.X) return a.Y.CompareTo(b.Y);
+                return a.X.CompareTo(b.X);
+            });
+          
             if (Length != 1)
             {
                 LeftBranch = new List<Point>();
-                RightBranch = new List<Point>();
+                RightBranch = new List<Point>();                
                 for (int i = 0; i < Length / 2; i++)
-                    LeftBranch.Add(points[i]);
+                     LeftBranch.Add(points[i]);
                 for (int i = Length / 2; i < points.Count; i++)
                     RightBranch.Add(points[i]);
-
                 NextLeftBranch = DivideTwoConvex(LeftBranch);
                 NextRightBranch = DivideTwoConvex(RightBranch);
-
                 return merge(NextLeftBranch, NextRightBranch);
             }
             else
                 return points;
         }
-        public override void Run(List<Point> points, List<Line> lines, List<Polygon> polygons, ref List<Point> outPoints, ref List<Line> outLines, ref List<Polygon> outPolygons)
+        public override void Run(List<Point> points, List<Line> lines, List<Polygon> polygons, ref List<Point> LastConvex, ref List<Line> outLines, ref List<Polygon> outPolygons)
         {
 
-            points = points.OrderBy(x => x.X).ThenBy(x => x.Y).ToList();
-            outPoints = new List<Point>();
-            List<Point> new_po = DivideTwoConvex(points);
-            for (int i = 0; i < new_po.Count; ++i)
-                if (!outPoints.Contains(new_po[i]))
+            LastConvex = new List<Point>();
+            List<Point> ReturnedPoints = DivideTwoConvex(points);
+            foreach (Point p in ReturnedPoints)
+            {
+                if (LastConvex.Contains(p) == false)
                 {
-                    outPoints.Add(new_po[i]);
-
+                    LastConvex.Add(p);
                 }
-
+            }
         }
-
         public override string ToString()
         {
             return "Convex Hull - DivideTwoConvex & Conquer";
